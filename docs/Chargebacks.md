@@ -1,0 +1,11 @@
+# Chargebacks
+
+Read disputes via `client.chargebacks.list`, `list_all`, and `get`, or the
+order-scoped `orders.list_chargebacks`, `list_all_chargebacks`, and `get_chargeback`.
+All are read-only. Preserve the signed financial snapshot for accounting.
+
+`order.chargeback_received` and `order.chargeback_reversed` webhook deliveries
+carry a Chargeback in `object` even though `entity_type` is `order`.
+Use `object.resource`, not the envelope entity type, to inspect the resource.
+
+See [method inventory](API.md#chargebacks) and [chargeback fields](https://docs.vatly.com/api-reference/chargebacks).
