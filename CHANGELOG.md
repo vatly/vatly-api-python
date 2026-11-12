@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0a2 — Unreleased
+
+- Preserve enabled currency/precision intersections in generated Money models.
+- Reject empty successful resource responses instead of returning untyped None.
+- Include request method and URL in timeout/connection errors in both clients.
+
 ## 0.1.0a1 — Unreleased
 
 > Alpha — under active development. Every alpha release may include breaking changes. Pin exact versions during alpha.

@@ -11,7 +11,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar
 from uuid import uuid4
 
 import httpx
@@ -161,8 +161,8 @@ class _Transport:
                 _retry_after(response.headers.get("Retry-After")),
             )
         try:
-            if response.status_code == 204 or not response.content:
-                return cast(T, None)
+            if response_type is type(None) and not response.content:
+                return None
             return TypeAdapter(response_type).validate_json(response.content)
         except (ValueError, ValidationError) as exc:
             raise VatlyApiError(
@@ -172,6 +172,21 @@ class _Transport:
                 url=str(response.request.url),
                 method=response.request.method,
             ) from exc
+
+    @staticmethod
+    def _network_error(exc: httpx.TransportError, kwargs: dict[str, Any]) -> VatlyConnectionError:
+        try:
+            request = exc.request
+        except RuntimeError:
+            request = httpx.Request(kwargs["method"], kwargs["url"], params=kwargs["params"])
+        cls = VatlyTimeoutError if isinstance(exc, httpx.TimeoutException) else VatlyConnectionError
+        error = cls(
+            "Vatly request timed out" if cls is VatlyTimeoutError else "Vatly connection failed",
+            method=request.method,
+            url=str(request.url),
+        )
+        error.__cause__ = exc
+        return error
 
     @staticmethod
     def _delay(error: VatlyError, attempt: int, retryable: bool, max_retries: int) -> float:
@@ -212,12 +227,8 @@ class SyncTransport(_Transport):
             try:
                 response = self._http.request(**kwargs)
                 return self._parse(response, response_type)
-            except httpx.TimeoutException as exc:
-                error: VatlyError = VatlyTimeoutError("Vatly request timed out")
-                error.__cause__ = exc
             except httpx.TransportError as exc:
-                error = VatlyConnectionError("Vatly connection failed")
-                error.__cause__ = exc
+                error: VatlyError = self._network_error(exc, kwargs)
             except VatlyError as exc:
                 error = exc
             time.sleep(self._delay(error, attempt, retryable, self.max_retries))
@@ -256,12 +267,8 @@ class AsyncTransport(_Transport):
             try:
                 response = await self._http.request(**kwargs)
                 return self._parse(response, response_type)
-            except httpx.TimeoutException as exc:
-                error: VatlyError = VatlyTimeoutError("Vatly request timed out")
-                error.__cause__ = exc
             except httpx.TransportError as exc:
-                error = VatlyConnectionError("Vatly connection failed")
-                error.__cause__ = exc
+                error: VatlyError = self._network_error(exc, kwargs)
             except VatlyError as exc:
                 error = exc
             await asyncio.sleep(self._delay(error, attempt, retryable, self.max_retries))
