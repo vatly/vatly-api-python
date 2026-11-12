@@ -11,7 +11,7 @@ OpenAPI operations are covered. No package has been published yet.
 Once published:
 
 ```bash
-pip install vatly-sdk==0.1.0a2
+pip install vatly-api-python==0.1.0a2
 ```
 
 For local development: `uv sync --locked`.

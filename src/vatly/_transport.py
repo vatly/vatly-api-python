@@ -89,12 +89,12 @@ class _Transport:
             {
                 "Authorization": f"Bearer {key}",
                 "Accept": "application/json",
-                "User-Agent": f"vatly-sdk-python/{__version__}",
+                "User-Agent": f"vatly-api-python/{__version__}",
             }
         )
         self._headers.update(default_headers or {})
         if client_info is not False:
-            info = f"sdk=vatly-sdk-python/{__version__}; runtime=python/{platform.python_version()}; os={platform.system()}; arch={platform.machine()}"
+            info = f"sdk=vatly-api-python/{__version__}; runtime=python/{platform.python_version()}; os={platform.system()}; arch={platform.machine()}"
             if isinstance(client_info, Mapping):
                 for name in ("app", "framework"):
                     value = re.sub(r"[\r\n;,]|\s+", " ", client_info.get(name, "")).strip()[:64]
