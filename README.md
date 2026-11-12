@@ -2,13 +2,11 @@
 
 > **Alpha — under active development. Every alpha release may include breaking changes. Pin exact versions during alpha.**
 
-Python SDK for Vatly, the merchant of record for AI, software and digital products.
+Python SDK for Vatly, the European merchant of record for AI, software and digital products.
 Python 3.10+, Pydantic v2 models, and pooled httpx sync/async clients. All 50 production
-OpenAPI operations are covered. No package has been published yet.
+OpenAPI operations are covered.
 
 ## Installation
-
-Once published:
 
 ```bash
 pip install vatly-api-python==0.1.0a2
@@ -95,13 +93,13 @@ All API/transport errors extend `VatlyError`, with `status`, `body`, `url`, `met
 | Network / timeout | `VatlyConnectionError` / `VatlyTimeoutError` |
 
 ```python
-from vatly import VatlyValidationError
+from vatly import VatlyClient, VatlyValidationError
 
-try:
-    # Your API call here
-    pass
-except VatlyValidationError as error:
-    print(error.errors)
+with VatlyClient() as vatly:
+    try:
+        customer = vatly.customers.create({"email": "buyer@example.com"})
+    except VatlyValidationError as error:
+        print(error.errors)
 ```
 
 See [getting started and resource guides](docs/README.md), the generated

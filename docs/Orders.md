@@ -6,10 +6,11 @@ link. Financial money values remain decimal strings. Tax and metadata fields are
 retained; do not reconstruct invoices from rounded float calculations.
 
 An order line's `product_type` selects what `product_id` refers to. Readers must
-support historical `subscription_plan` lines (plan IDs) and `subscription` lines
-(subscription IDs). Pending core PR #2910 also stamps initial checkout lines with
-the intended subscription ID. An intended ID may temporarily 404 or never resolve
-for a skipped trial start: use bounded recovery and inspect status, not ID presence,
-before granting access. One-off lines are unaffected.
+support `subscription_plan` lines (plan IDs) and `subscription` lines
+(subscription IDs). Pending [core PR #2910](https://github.com/sandervanhooft/vatlify/pull/2910)
+now proposes additive `relatedResources.subscriptionId`, without changing those
+product references. This SDK's pinned schema predates that proposal: extra output
+fields are preserved, but there is no typed related-resources accessor yet.
+Never grant access from an ID alone; verify ownership and subscription status.
 
 See [method inventory](API.md#orders) and [order fields](https://docs.vatly.com/api-reference/orders).

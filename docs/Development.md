@@ -36,17 +36,18 @@ Run twice to check warm behavior. No services or resume repairs are needed.
 It will become available to project orbs once pushed to the default branch and
 the repository is connected as an Amp project.
 
-## Future PyPI release (not executed)
+## PyPI releases
 
-The distribution name `vatly-api-python` returned 404 from PyPI's JSON API on 2026-11-12.
-Availability is not a reservation or guarantee of PyPI name approval.
+[`vatly-api-python` 0.1.0a2](https://pypi.org/project/vatly-api-python/0.1.0a2/)
+was published on 2026-11-12. The import name remains `vatly`.
 
 1. Push reviewed code to the private `vatly/vatly-api-python` repository's main branch.
-2. Configure a PyPI pending trusted publisher for project `vatly-api-python`, owner `vatly`,
+2. Keep the PyPI trusted publisher for project `vatly-api-python`, owner `vatly`,
    repository `vatly-api-python`, workflow `release.yml`; leave the environment field blank.
    No GitHub environment or PyPI token is needed.
 3. Update both package-version sources and changelog, run CI, and only with approval
-   create a `v0.1.0a2` tag and publish its GitHub release (mark it a prerelease).
+   create a new `v<version>` tag and publish its GitHub release (mark alphas as prereleases).
+   Never reuse a published version or move an existing release tag.
 4. The release workflow validates/builds first, then exchanges GitHub OIDC for PyPI
    credentials. Anyone able to publish a matching GitHub release can initiate publication;
    restrict repository release access accordingly. Publish the SDK before Fluent.
