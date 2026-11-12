@@ -1,6 +1,9 @@
-# Development and release
+---
+title: Development and release
+description: Maintain the SDK, update its API specification, sync documentation and prepare releases.
+---
 
-Maintain the SDK, update its API specification, sync documentation and prepare releases.
+# Development and release
 
 ## Set up the repository
 
@@ -83,7 +86,8 @@ inventory is generated from `scripts/generate.py`, including its description.
 
 Pushes to `main` affecting `docs/**` notify `vatly/vatly-docs`. The notifier needs
 the Actions secret `VATLY_DOCS_DISPATCH_TOKEN` with Contents: write access to that
-repository. The sync uses each page's introductory sentence as its description.
+repository. The sync uses an explicit frontmatter description when present,
+otherwise the page's introductory sentence.
 
 ## Prepare a release
 

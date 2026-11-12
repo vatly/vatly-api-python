@@ -150,9 +150,12 @@ def generate(out: Path) -> None:
         "from .pagination import Page, next_params",
     ]
     docs = [
-        "# API reference",
+        "---",
+        "title: API reference",
+        "description: Look up SDK methods, HTTP endpoints and return types for synchronous and asynchronous clients.",
+        "---",
         "",
-        "Look up SDK methods, HTTP endpoints and return types for synchronous and asynchronous clients.",
+        "# API reference",
         "",
         "Generated from `openapi.yaml`. Sync and async clients expose the same methods.",
         "Pass a Pydantic request/params model or a wire-format dictionary. All methods accept keyword-only `options=RequestOptions(...)`.",
