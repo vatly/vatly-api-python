@@ -1735,7 +1735,7 @@ wheels = [
 ]
 
 [[package]]
-name = "vatly-sdk"
+name = "vatly-api-python"
 version = "0.1.0a2"
 source = { editable = "." }
 dependencies = [

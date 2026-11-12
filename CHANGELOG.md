@@ -2,6 +2,7 @@
 
 ## 0.1.0a2 — Unreleased
 
+- Use the PyPI distribution name `vatly-api-python`; imports remain `vatly`.
 - Preserve enabled currency/precision intersections in generated Money models.
 - Reject empty successful resource responses instead of returning untyped None.
 - Include request method and URL in timeout/connection errors in both clients.

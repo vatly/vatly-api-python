@@ -2,7 +2,7 @@
 
 > **Alpha — under active development. Every alpha release may include breaking changes. Pin exact versions during alpha.**
 
-Use `vatly-sdk==0.1.0a2` (once published), imported as `vatly`. Requires Python 3.10+.
+Use `vatly-api-python==0.1.0a2` (once published), imported as `vatly`. Requires Python 3.10+.
 Create `VatlyClient` inside `with`, or `AsyncVatlyClient` inside `async with`, to
 close the connection pool. Both accept an explicit API key or `VATLY_API_KEY`.
 Test and live modes use the same API host; keys select the mode.

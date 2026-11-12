@@ -38,11 +38,11 @@ the repository is connected as an Amp project.
 
 ## Future PyPI release (not executed)
 
-The distribution name `vatly-sdk` returned 404 from PyPI's JSON API on 2026-11-09.
+The distribution name `vatly-api-python` returned 404 from PyPI's JSON API on 2026-11-12.
 Availability is not a reservation or guarantee of PyPI name approval.
 
 1. Push reviewed code to the private `vatly/vatly-api-python` repository's main branch.
-2. Configure a PyPI pending trusted publisher for project `vatly-sdk`, owner `vatly`,
+2. Configure a PyPI pending trusted publisher for project `vatly-api-python`, owner `vatly`,
    repository `vatly-api-python`, workflow `release.yml`; leave the environment field blank.
    No GitHub environment or PyPI token is needed.
 3. Update both package-version sources and changelog, run CI, and only with approval

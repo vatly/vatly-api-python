@@ -3,7 +3,7 @@ requires = ["hatchling==1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "vatly-sdk"
+name = "vatly-api-python"
 version = "0.1.0a2"
 description = "Python SDK for Vatly, the merchant of record for AI, software and digital products"
 readme = "README.md"
