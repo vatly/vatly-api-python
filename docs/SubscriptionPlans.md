@@ -5,7 +5,7 @@
 `UpdateSubscriptionPlanRequest` from `vatly.models`. Money is a decimal string
 plus currency; preserve both. Archiving returns `None`, unarchiving the plan.
 
-Test-mode catalogue changes are auto-approved; live changes may await approval.
+Test-mode product changes are auto-approved; live changes may await approval.
 Archive prevents new sales, not existing subscription renewals. Select
 `includeArchived` in dictionary filters when needed, or the corresponding model's
 `include_archived` field.

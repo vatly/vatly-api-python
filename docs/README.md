@@ -16,8 +16,8 @@ pagination, retries, configuration, errors and development commands.
 | [Checkouts](Checkouts.md) | Hosted payment pages |
 | [Customers](Customers.md) | Customer identity and portal sessions |
 | [Subscriptions](Subscriptions.md) | Recurring billing |
-| [Subscription Plans](SubscriptionPlans.md) | Subscription catalogue |
-| [One-Off Products](OneOffProducts.md) | One-time catalogue |
+| [Subscription Plans](SubscriptionPlans.md) | Subscription products |
+| [One-Off Products](OneOffProducts.md) | One-time products |
 | [Orders](Orders.md) | Transactions and nested financial operations |
 | [Refunds](Refunds.md) | Reversals |
 | [Chargebacks](Chargebacks.md) | Disputes |

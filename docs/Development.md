@@ -24,8 +24,10 @@ Do not log them indiscriminately.
 ## Documentation sync
 
 `docs/README.md`, `API.md`, and the resource guides mirror the JS SDK's layout.
-They are self-contained Markdown for a future vatly-docs Python SDK sync; no sync
-job or changes to the docs repository are made here. Keep relative links portable.
+Pushes to `main` affecting `docs/**` notify `vatly/vatly-docs`, which imports
+these guides automatically. The notifier requires the Actions secret
+`VATLY_DOCS_DISPATCH_TOKEN` with Contents: write access to `vatly/vatly-docs`.
+Keep relative links portable.
 `API.md` is generated; prose guides are maintained manually.
 
 ## Orb setup
@@ -41,7 +43,7 @@ the repository is connected as an Amp project.
 [`vatly-api-python` 0.1.0a2](https://pypi.org/project/vatly-api-python/0.1.0a2/)
 was published on 2026-11-12. The import name remains `vatly`.
 
-1. Push reviewed code to the private `vatly/vatly-api-python` repository's main branch.
+1. Push reviewed code to the public `vatly/vatly-api-python` repository's main branch.
 2. Keep the PyPI trusted publisher for project `vatly-api-python`, owner `vatly`,
    repository `vatly-api-python`, workflow `release.yml`; leave the environment field blank.
    No GitHub environment or PyPI token is needed.

@@ -1,7 +1,7 @@
 # Checkouts
 
 Use `client.checkouts.create(CreateCheckoutRequest(...))` to create a hosted payment
-page. Redirect to `checkout.links.checkout_url.href`. Products use Vatly catalogue
+page. Redirect to `checkout.links.checkout_url.href`. Products use Vatly product
 IDs and quantities. Both success/cancellation redirect URLs are required. Use
 `customer_id` for an existing authorized customer, or omit it for an anonymous flow.
 
