@@ -45,82 +45,11 @@ class Money1(VatlyModel):
     ]
 
 
-class Money2(VatlyModel):
-    """
-    Monetary value with currency
-    """
-
-    model_config = ConfigDict(
-        extra="allow",
-        populate_by_name=True,
-    )
-    value: Annotated[
-        str,
-        Field(
-            description='The amount as a decimal string. Sent and returned as a string to\npreserve precision for financial calculations.\n\nThe number of required decimal places is **currency-dependent**: it\nequals the currency\'s ISO 4217 minor-unit count — the same rule the\nserver enforces via [moneyphp/money](https://github.com/moneyphp/money)\'s\n`DecimalMoneyParser`. The `(value, currency)` pair is validated\ntogether (see the `oneOf` below); mixing precisions is rejected:\n\n- 2 decimals — EUR, USD (and most currencies): `"10.00"` ✓, `"10"` ✗, `"10.0"` ✗, `"10.000"` ✗\n- 0 decimals — e.g. JPY: `"1000"` ✓, `"1000.00"` ✗   *(not yet enabled)*\n- 3 decimals — e.g. BHD, KWD, OMR, TND: `"1.000"` ✓, `"1.00"` ✗   *(not yet enabled)*\n\nBecause the value is a decimal amount (not minor units), `"1000"`\nmeans one thousand units — valid only for a 0-decimal currency; for\nEUR/USD you must write `"1000.00"`.\n',
-            examples=["99.99"],
-            pattern="^\\d+$",
-        ),
-    ]
-    currency: Annotated[
-        Literal[
-            "EUR",
-            "USD",
-            "BIF",
-            "CLP",
-            "DJF",
-            "GNF",
-            "ISK",
-            "JPY",
-            "KMF",
-            "KRW",
-            "PYG",
-            "RWF",
-            "UGX",
-            "VND",
-            "VUV",
-            "XAF",
-            "XOF",
-            "XPF",
-        ],
-        Field(
-            description="ISO 4217 currency code. Vatly aligns its supported currency set\nwith its payment provider's; currencies are enabled as PSP support and\ndownstream tax/FX coverage are in place. More currencies may be added\nlater.\n",
-            examples=["EUR"],
-        ),
-    ]
-
-
-class Money3(VatlyModel):
-    """
-    Monetary value with currency
-    """
-
-    model_config = ConfigDict(
-        extra="allow",
-        populate_by_name=True,
-    )
-    value: Annotated[
-        str,
-        Field(
-            description='The amount as a decimal string. Sent and returned as a string to\npreserve precision for financial calculations.\n\nThe number of required decimal places is **currency-dependent**: it\nequals the currency\'s ISO 4217 minor-unit count — the same rule the\nserver enforces via [moneyphp/money](https://github.com/moneyphp/money)\'s\n`DecimalMoneyParser`. The `(value, currency)` pair is validated\ntogether (see the `oneOf` below); mixing precisions is rejected:\n\n- 2 decimals — EUR, USD (and most currencies): `"10.00"` ✓, `"10"` ✗, `"10.0"` ✗, `"10.000"` ✗\n- 0 decimals — e.g. JPY: `"1000"` ✓, `"1000.00"` ✗   *(not yet enabled)*\n- 3 decimals — e.g. BHD, KWD, OMR, TND: `"1.000"` ✓, `"1.00"` ✗   *(not yet enabled)*\n\nBecause the value is a decimal amount (not minor units), `"1000"`\nmeans one thousand units — valid only for a 0-decimal currency; for\nEUR/USD you must write `"1000.00"`.\n',
-            examples=["99.99"],
-            pattern="^\\d+\\.\\d{3}$",
-        ),
-    ]
-    currency: Annotated[
-        Literal["EUR", "USD", "BHD", "IQD", "JOD", "KWD", "LYD", "OMR", "TND"],
-        Field(
-            description="ISO 4217 currency code. Vatly aligns its supported currency set\nwith its payment provider's; currencies are enabled as PSP support and\ndownstream tax/FX coverage are in place. More currencies may be added\nlater.\n",
-            examples=["EUR"],
-        ),
-    ]
-
-
-class Money(RootModel[Money1 | Money2 | Money3]):
+class Money(RootModel[Money1]):
     model_config = ConfigDict(
         populate_by_name=True,
     )
-    root: Annotated[Money1 | Money2 | Money3, Field(description="Monetary value with currency")]
+    root: Annotated[Money1, Field(description="Monetary value with currency")]
 
 
 class EurMoney(VatlyModel):

@@ -9,10 +9,11 @@ from pathlib import Path
 import httpx
 import pytest
 from conftest import example
+from pydantic import ValidationError
 
 import vatly
 from vatly import AsyncVatlyClient, RequestOptions, VatlyClient
-from vatly.models import CreateCheckoutRequest, UpdateCustomerRequest
+from vatly.models import CreateCheckoutRequest, Money, UpdateCustomerRequest
 from vatly.webhooks import (
     compute_signature_v1,
     construct_webhook_event,
@@ -226,19 +227,69 @@ def test_retry_safety(monkeypatch, status, outcome, keyed, attempts, asynchronou
         (httpx.ConnectError, vatly.VatlyConnectionError),
     ],
 )
-def test_network_errors_retry_and_retain_cause(monkeypatch, failure, error):
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("attached_request", [False, True])
+def test_network_errors_retry_and_retain_cause(
+    monkeypatch, failure, error, asynchronous, attached_request
+):
     monkeypatch.setattr("vatly._transport.time.sleep", lambda t: None)
+
+    async def no_sleep(t):
+        pass
+
+    monkeypatch.setattr("vatly._transport.asyncio.sleep", no_sleep)
     seen = []
 
     def handler(r):
         seen.append(r)
-        raise failure("offline", request=r)
+        raise failure("offline", request=r if attached_request else None)
 
-    with VatlyClient(KEY, transport=httpx.MockTransport(handler)) as c:
-        with pytest.raises(error) as caught:
-            c.customers.list()
+    async def run():
+        async with AsyncVatlyClient(KEY, transport=httpx.MockTransport(handler)) as c:
+            await c.customers.list({"limit": 7})
+
+    with pytest.raises(error) as caught:
+        if asynchronous:
+            asyncio.run(run())
+        else:
+            with VatlyClient(KEY, transport=httpx.MockTransport(handler)) as c:
+                c.customers.list({"limit": 7})
     assert len(seen) == 3
     assert isinstance(caught.value.__cause__, failure)
+    assert caught.value.method == "GET"
+    assert caught.value.url == "https://api.vatly.com/v1/customers?limit=7"
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize("status,body", [(200, b""), (204, b""), (200, b"not-json")])
+def test_typed_resource_rejects_invalid_success(asynchronous, status, body):
+    def handler(r):
+        return httpx.Response(status, content=body)
+
+    async def run():
+        async with AsyncVatlyClient(KEY, transport=httpx.MockTransport(handler)) as c:
+            await c.customers.get("customer_a")
+
+    with pytest.raises(vatly.VatlyApiError, match="Invalid Vatly response") as caught:
+        if asynchronous:
+            asyncio.run(run())
+        else:
+            with VatlyClient(KEY, transport=httpx.MockTransport(handler)) as c:
+                c.customers.get("customer_a")
+    assert caught.value.status == status
+    assert caught.value.method == "GET"
+    assert caught.value.url == "https://api.vatly.com/v1/customers/customer_a"
+
+
+@pytest.mark.parametrize("currency", ["EUR", "USD"])
+def test_money_preserves_enabled_currency_precision_contract(currency):
+    assert Money.model_validate({"value": "10.00", "currency": currency}).root.value == "10.00"
+    for value in ["10", "10.0", "10.000"]:
+        with pytest.raises(ValidationError):
+            Money.model_validate({"value": value, "currency": currency})
+    for value, disabled in [("1000", "JPY"), ("1.000", "BHD")]:
+        with pytest.raises(ValidationError):
+            Money.model_validate({"value": value, "currency": disabled})
 
 
 def test_retry_after_date_and_header_precedence(monkeypatch):

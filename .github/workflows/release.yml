@@ -27,9 +27,6 @@ jobs:
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/vatly-sdk
     permissions:
       id-token: write
     steps:

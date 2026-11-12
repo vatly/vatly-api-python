@@ -43,12 +43,13 @@ Availability is not a reservation or guarantee of PyPI name approval.
 
 1. Push reviewed code to the private `vatly/vatly-api-python` repository's main branch.
 2. Configure a PyPI pending trusted publisher for project `vatly-sdk`, owner `vatly`,
-   repository `vatly-api-python`, workflow `release.yml`, environment `pypi`.
-3. Create the GitHub `pypi` environment with required reviewers. Do not store a PyPI token.
-4. Update both package-version sources and changelog, run CI, and only with approval
-   create a `v0.1.0a1` tag and publish its GitHub release (mark it a prerelease).
-5. The release workflow validates/builds first, then exchanges GitHub OIDC for PyPI
-   credentials in the protected environment. Publish the SDK before Fluent.
+   repository `vatly-api-python`, workflow `release.yml`; leave the environment field blank.
+   No GitHub environment or PyPI token is needed.
+3. Update both package-version sources and changelog, run CI, and only with approval
+   create a `v0.1.0a2` tag and publish its GitHub release (mark it a prerelease).
+4. The release workflow validates/builds first, then exchanges GitHub OIDC for PyPI
+   credentials. Anyone able to publish a matching GitHub release can initiate publication;
+   restrict repository release access accordingly. Publish the SDK before Fluent.
 
 **A private GitHub repository does not make PyPI artifacts private.** Publishing
 uploads the wheel and sdist publicly, including their source and packaged docs.

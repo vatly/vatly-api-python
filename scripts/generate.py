@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from copy import deepcopy
 from pathlib import Path
 
 import yaml
@@ -76,6 +77,25 @@ def generate(out: Path) -> None:
         return value
 
     schemas = wire_strings(schemas)
+    # Resolve Money's outer/branch intersection before codegen: the generator
+    # otherwise unions currency enums and drops the two-decimal branch's `not`.
+    money = schemas["Money"]
+    variants = []
+    for branch in money["oneOf"]:
+        constraint = branch["properties"]["currency"]
+        currencies = [
+            currency
+            for currency in money["properties"]["currency"]["enum"]
+            if currency in constraint.get("enum", [currency])
+            and currency not in constraint.get("not", {}).get("enum", [])
+        ]
+        if not currencies:
+            continue
+        variant = deepcopy({k: v for k, v in money.items() if k != "oneOf"})
+        variant["properties"]["currency"]["enum"] = currencies
+        variant["properties"]["value"].update(branch["properties"]["value"])
+        variants.append(variant)
+    schemas["Money"] = {"description": money["description"], "oneOf": variants}
     # Production currently returns catalogue values such as `digital_download`
     # beyond this output enum. Preserve them; keep request enums constrained.
     schemas["OneOffProduct"]["properties"]["productType"].pop("enum", None)
