@@ -62,6 +62,94 @@ def test_inventory_covers_spec(spec):
 
 
 @pytest.mark.parametrize("asynchronous", [False, True])
+@pytest.mark.parametrize(
+    "namespace,name,method,path,operation",
+    [case for case in operation_cases() if case[1].startswith("list")],
+)
+def test_all_paginated_resources(spec, asynchronous, namespace, name, method, path, operation):
+    schema = operation["responses"]["200"]["content"]["application/json"]["schema"]
+    page = example(schema, spec)
+    first = page["data"][0]
+    second = {**first, "id": first["id"] + "second"}
+    calls = []
+
+    def respond(request):
+        calls.append(request)
+        assert request.url.params["limit"] == "1"
+        assert request.headers["X-Trace"] == "pagination"
+        if len(calls) == 1:
+            assert request.url.params["endingBefore"] == "initial"
+            return httpx.Response(
+                200,
+                json={
+                    **page,
+                    "data": [first],
+                    "count": 1,
+                    "links": {
+                        **page["links"],
+                        "next": {
+                            "href": "https://untrusted.test/?startingAfter=next_cursor",
+                            "type": "application/json",
+                        },
+                    },
+                },
+            )
+        assert request.url.host == "api.vatly.com"
+        assert request.url.params["startingAfter"] == "next_cursor"
+        assert "endingBefore" not in request.url.params
+        return httpx.Response(
+            200,
+            json={
+                **page,
+                "data": [second],
+                "count": 1,
+                "links": {**page["links"], "next": None},
+            },
+        )
+
+    def iterator(client):
+        iterator_name = name.replace("list", "list_all", 1)
+        fn = getattr(getattr(client, namespace), iterator_name)
+        args = {key: "parent_id" for key in inspect.signature(fn).parameters if key.endswith("_id")}
+        return fn(
+            **args,
+            params={"limit": 1, "endingBefore": "initial"},
+            options=RequestOptions(headers={"X-Trace": "pagination"}),
+        )
+
+    async def run():
+        async with AsyncVatlyClient(KEY, transport=httpx.MockTransport(respond)) as client:
+            return [item.id async for item in iterator(client)]
+
+    if asynchronous:
+        ids = asyncio.run(run())
+    else:
+        with VatlyClient(KEY, transport=httpx.MockTransport(respond)) as client:
+            ids = [item.id for item in iterator(client)]
+    assert ids == [first["id"], second["id"]]
+    assert len(calls) == 2
+
+
+@pytest.mark.parametrize("raw", [b"not json", b"[]", b"{}", b"null"])
+def test_signed_invalid_envelopes_are_rejected(raw):
+    from vatly.webhooks import construct_event
+
+    signature = "t=100,v1=" + compute_signature_v1(raw, "secret", 100)
+    for construct in (construct_event, construct_webhook_event):
+        with pytest.raises(vatly.VatlyInvalidSignatureError, match="envelope"):
+            construct(raw, signature, "secret", now=100)
+
+
+@pytest.mark.parametrize("header", [None, "", "t=-1,v1=bad", "t=100,v1=bad"])
+def test_boolean_signature_verification_rejects_missing_or_malformed_headers(header):
+    from vatly.webhooks import is_valid_webhook_signature
+
+    assert not is_valid_webhook_signature(b"{}", header, "secret", now=100)
+    signature = "t=100,v1=" + compute_signature_v1(b"{}", "secret", 100)
+    assert is_valid_webhook_signature(b"{}", signature, "secret", now=100)
+
+
+@pytest.mark.parametrize("asynchronous", [False, True])
 @pytest.mark.parametrize("namespace,name,method,path,operation", operation_cases())
 def test_all_production_operations(spec, asynchronous, namespace, name, method, path, operation):
     response = next(v for code, v in operation["responses"].items() if str(code).startswith("2"))
