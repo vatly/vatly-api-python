@@ -1,25 +1,66 @@
-# Getting started
+# Vatly Python SDK
 
-> **Alpha — under active development. Every alpha release may include breaking changes. Pin exact versions during alpha.**
+Vatly is the European merchant of record for AI, software and digital products.
+Use this SDK for typed API calls from Python 3.10+. For a storage-backed billing
+integration, use Fluent Python or Vatly Django.
 
-Use `vatly-api-python==0.1.0a2`, imported as `vatly`. Requires Python 3.10+.
-Create `VatlyClient` inside `with`, or `AsyncVatlyClient` inside `async with`, to
-close the connection pool. Both accept an explicit API key or `VATLY_API_KEY`.
-Test and live modes use the same API host; keys select the mode.
+**Alpha — under active development. Every alpha release may include breaking changes. Pin exact versions during alpha.**
 
-See the [SDK README](../README.md) for runnable initialization, checkout,
-pagination, retries, configuration, errors and development commands.
+## Install and connect
 
-| Guide | Purpose |
+```bash
+python -m pip install vatly-api-python==0.1.0a2
+```
+
+Set `VATLY_API_KEY` in your server environment. Test and live keys use the same
+API host; the key selects the mode. Never put credentials in client-side code.
+
+```python
+from vatly import VatlyClient
+
+
+def example():
+    with VatlyClient() as client:
+        return client.customers.list({"limit": 10}).data
+```
+
+Resource-page functions accept that configured client. Copy a function, then call
+`example(client)` inside the `with` block. Replace example resource IDs with your
+own. Creation, updates, cancellations and refunds mutate the selected account.
+
+## Async applications
+
+```python
+from vatly import AsyncVatlyClient
+
+
+async def example():
+    async with AsyncVatlyClient() as client:
+        return [customer.id async for customer in client.customers.list_all({"limit": 25})]
+```
+
+Async resource methods use `await`; pagination uses `async for`. Both clients
+return Pydantic models. Python fields use snake_case; dictionary inputs use Vatly's
+camelCase wire keys. Unknown response fields are preserved.
+
+## Choose a guide
+
+| Guide | What you can do |
 | --- | --- |
-| [API](API.md) | Every method, endpoint and response |
-| [Checkouts](Checkouts.md) | Hosted payment pages |
-| [Customers](Customers.md) | Customer identity and portal sessions |
-| [Subscriptions](Subscriptions.md) | Recurring billing |
-| [Subscription Plans](SubscriptionPlans.md) | Subscription products |
-| [One-Off Products](OneOffProducts.md) | One-time products |
-| [Orders](Orders.md) | Transactions and nested financial operations |
-| [Refunds](Refunds.md) | Reversals |
-| [Chargebacks](Chargebacks.md) | Disputes |
-| [Webhooks](Webhooks.md) | Signatures, events and endpoints |
-| [Development](Development.md) | Spec/docs sync, setup, release |
+| [Configuration](Configuration.md) | Set timeouts, retries and handle errors |
+| [Customers](Customers.md) | Create/find customers and open their portal |
+| [Checkouts](Checkouts.md) | Build a hosted one-off or recurring payment |
+| [Subscriptions](Subscriptions.md) | Change plans, cancel, resume and update billing |
+| [Subscription plans](SubscriptionPlans.md) | Manage recurring catalog products |
+| [One-off products](OneOffProducts.md) | Manage one-time catalog products |
+| [Orders](Orders.md) | Read lines, totals and invoice links |
+| [Refunds](Refunds.md) | Refund an order and track reversals |
+| [Chargebacks](Chargebacks.md) | Read payment disputes |
+| [Webhooks](Webhooks.md) | Verify raw signed deliveries |
+| [Webhook endpoints](WebhookEndpoints.md) | Register and manage receivers |
+| [API inventory](API.md) | Look up every method and endpoint |
+| [Development](Development.md) | Contribute, regenerate models and run checks |
+
+[API reference](https://docs.vatly.com/api-reference) contains the complete request
+and response contracts. Examples in these guides are executed against published
+`0.1.0a2` packages with local HTTP fixtures; tests make no Vatly account changes.
