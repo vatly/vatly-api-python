@@ -1,5 +1,7 @@
 # Development and release
 
+Maintain the SDK, update its API specification, sync documentation and prepare releases.
+
 ## Sources
 
 `openapi.yaml` was fetched on 2026-11-09 from https://docs.vatly.com/openapi.yaml,
