@@ -2,7 +2,7 @@
 
 > **Alpha — under active development. Every alpha release may include breaking changes. Pin exact versions during alpha.**
 
-Python SDK for Vatly, the European merchant of record for AI, software and digital products.
+Python SDK for Vatly, the European Merchant of Record for AI, software and digital products.
 Python 3.10+, Pydantic v2 models, and pooled httpx sync/async clients. All 50 production
 OpenAPI operations are covered.
 
