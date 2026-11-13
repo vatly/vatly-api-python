@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.1.0a3 — 2026-11-13
 
+- Sync `openapi.yaml` with the production specification.
+- Add `OrderLine.related_resources.subscription_id`: the subscription associated with a
+  signup, renewal or immediate-update line. `related_resources` is `None` on historical
+  and unrelated lines and when omitted; `subscription_id` is `None` on a signup line
+  whose subscription is not yet available. `product_type`/`product_id` are unchanged.
 - Clarify European positioning, installation and release documentation.
 
 ## 0.1.0a2 — 2026-11-12

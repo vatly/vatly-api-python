@@ -224,6 +224,36 @@ def test_models_aliases_explicit_null_and_timeouts():
     )
 
 
+def test_order_line_related_subscription_is_typed_and_nullable(spec):
+    order = example(spec["components"]["schemas"]["Order"], spec)
+    line = order["lines"][0]
+    order["lines"] = [
+        {
+            **line,
+            "productType": "subscription_plan",
+            "productId": "subscription_plan_a",
+            "relatedResources": {"subscriptionId": "subscription_a"},
+        },
+        {**line, "productType": "subscription_plan", "relatedResources": {"subscriptionId": None}},
+        {**line, "productType": "one_off_product", "relatedResources": None},
+        line,  # Older payloads omit relatedResources.
+    ]
+    with VatlyClient(
+        KEY, transport=httpx.MockTransport(lambda r: httpx.Response(200, json=order))
+    ) as c:
+        signup, unresolved, unrelated, older = c.orders.get("order_a").lines
+    assert "relatedResources" not in line
+    assert signup.related_resources.subscription_id == "subscription_a"
+    assert signup.product_id == "subscription_plan_a"
+    assert unresolved.related_resources is not None
+    assert unresolved.related_resources.subscription_id is None
+    assert unrelated.related_resources is None
+    assert older.related_resources is None
+    wire = [ln.model_dump(by_alias=True, exclude_unset=True) for ln in (signup, unresolved)]
+    assert wire[0]["relatedResources"] == {"subscriptionId": "subscription_a"}
+    assert wire[1]["relatedResources"] == {"subscriptionId": None}
+
+
 @pytest.mark.parametrize(
     "status,error",
     [
