@@ -9,7 +9,7 @@ OpenAPI operations are covered.
 ## Installation
 
 ```bash
-pip install vatly-api-python==0.1.0a2
+pip install vatly-api-python==0.1.0a3
 ```
 
 For local development: `uv sync --locked`.

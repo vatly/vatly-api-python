@@ -1061,6 +1061,33 @@ class Links4(VatlyModel):
     ]
 
 
+class RelatedResources(VatlyModel):
+    """
+    Additional per-line relationships. Null on historical lines without recorded
+    correlation and on unrelated lines (including one-off, billing-verification
+    and authorization-minimum lines). Older payloads may omit this property.
+    Signup, renewal and immediate-update lines use the same subscriptionId:
+    the subscription associated with this line, not a creation or entitlement
+    signal. On ordinary sale lines productType distinguishes initial signup
+    (subscription_plan) from renewal/update (subscription). It does not
+    distinguish a renewal from an immediate update. Reversal lines copy the
+    original relationship and product reference, not a new creation claim.
+
+    """
+
+    model_config = ConfigDict(
+        extra="allow",
+        populate_by_name=True,
+    )
+    subscription_id: Annotated[
+        str | None,
+        Field(
+            alias="subscriptionId",
+            description="Subscription associated with this line. On initial signup lines,\nnull while the exact subscription projection is unavailable,\nincluding pending or skipped creation; null does not distinguish\nthese cases and is not proof that creation failed or was skipped.\nThe deterministic per-line identity is retained durably, so GET\nreveals the ID after projection recovery without recreating the\npaid order. Frozen webhook deliveries retain their original snapshot;\nGET and newly generated webhooks use the current availability.\nSeparate same-plan checkout lines have distinct subscription IDs;\nquantity is the quantity of one subscription, not a subscription count.\nCreation does not imply activation, entitlement or immediate readability.\nValidate ownership and status before granting access.\n",
+        ),
+    ] = None
+
+
 class InvoiceUpdateLink(VatlyModel):
     """
     A signed URL for the customer to update invoice details (billing address, VAT number, company name)
@@ -2117,7 +2144,14 @@ class CreateSubscriptionBillingUpdateLinkResponse(VatlyModel):
 
 class OrderLine(VatlyModel):
     """
-    A line item in an order
+    A line item in an order. `productType`/`productId` retain their existing meaning:
+    initial subscription lines reference the plan; renewal and immediate-update
+    lines reference the existing subscription. `relatedResources` adds the exact
+    per-line subscription relationship without repeating the product reference.
+    Discounts remain components of their owning line.
+    Follow a paid Checkout's `orderId` to its order lines; Checkout is unchanged.
+    No historical backfill is performed.
+
     """
 
     model_config = ConfigDict(
@@ -2163,16 +2197,23 @@ class OrderLine(VatlyModel):
         | None,
         Field(
             alias="productType",
-            description="The product type this line links to; null when the line has no product link.",
-            examples=["subscription"],
+            description="Linked resource type. Initial subscription orders use\n`subscription_plan`; renewals and immediate updates use `subscription`.\nExisting values and new-write behavior are unchanged.\n",
+            examples=["subscription_plan"],
         ),
     ] = None
     product_id: Annotated[
         str | None,
         Field(
             alias="productId",
-            description="The linked product's id; for a `subscription` line this is the public `subscription_…` id.",
-            examples=["subscription_Hn5xWqVfKm8RjTgYbUcP"],
+            description="Linked resource ID: a plan ID when productType is subscription_plan,\na subscription ID when productType is subscription. Existing values and\nnew-write behavior are unchanged.\n",
+            examples=["subscription_plan_Hn5xWqVfKm8RjTgYbUcP"],
+        ),
+    ] = None
+    related_resources: Annotated[
+        RelatedResources | None,
+        Field(
+            alias="relatedResources",
+            description="Additional per-line relationships. Null on historical lines without recorded\ncorrelation and on unrelated lines (including one-off, billing-verification\nand authorization-minimum lines). Older payloads may omit this property.\nSignup, renewal and immediate-update lines use the same subscriptionId:\nthe subscription associated with this line, not a creation or entitlement\nsignal. On ordinary sale lines productType distinguishes initial signup\n(subscription_plan) from renewal/update (subscription). It does not\ndistinguish a renewal from an immediate update. Reversal lines copy the\noriginal relationship and product reference, not a new creation claim.\n",
         ),
     ] = None
 
