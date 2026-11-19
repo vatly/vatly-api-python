@@ -1,6 +1,6 @@
 # Vatly Python SDK
 
-> **Alpha — under active development. Every alpha release may include breaking changes. Pin exact versions during alpha.**
+> **Alpha — under active development. Every alpha release may include breaking changes. Lock the version you install and review the release notes before upgrading.**
 
 Python SDK for Vatly, the European Merchant of Record for AI, software and digital products.
 Python 3.10+, Pydantic v2 models, and pooled httpx sync/async clients. All 50 production
@@ -9,8 +9,10 @@ OpenAPI operations are covered.
 ## Installation
 
 ```bash
-pip install vatly-api-python==0.1.0a3
+pip install --pre vatly-api-python
 ```
+
+`--pre` installs the latest alpha release.
 
 For local development: `uv sync --locked`.
 
