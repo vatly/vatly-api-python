@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Sync `openapi.yaml` with the production specification.
+- `CreateSubscriptionPlanRequest` and `UpdateSubscriptionPlanRequest` now accept only
+  `interval` `"month"` or `"year"` with `interval_count` `1`, matching the API, which
+  returns `422` for anything else in live and test mode. On update, send `interval`
+  and `interval_count` together. Response models still accept `"day"`, `"week"` and
+  higher counts from plans created earlier.
+
 ## 0.1.0a3 — 2026-11-13
 
 - Sync `openapi.yaml` with the production specification.

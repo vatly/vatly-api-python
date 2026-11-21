@@ -839,7 +839,7 @@ class PendingUpdates1(VatlyModel):
         populate_by_name=True,
     )
     name: Annotated[str | None, Field(examples=["Pro Weekly"])] = None
-    description: Annotated[str | None, Field(examples=["Billed weekly"])] = None
+    description: Annotated[str | None, Field(examples=["Billed yearly"])] = None
     base_price: Annotated[Money | None, Field(alias="basePrice")] = None
     interval: Literal["day", "week", "month", "year"] | None = None
     interval_count: Annotated[int | None, Field(alias="intervalCount", ge=1)] = None
@@ -910,7 +910,7 @@ class SubscriptionPlan(VatlyModel):
     interval: Annotated[
         Literal["day", "week", "month", "year"],
         Field(
-            description="Billing interval unit:\n- `day` - Daily billing\n- `week` - Weekly billing\n- `month` - Monthly billing\n- `year` - Yearly billing\n",
+            description="Billing interval unit:\n- `month` - Monthly billing\n- `year` - Yearly billing\n\nNew plans are always `month` or `year`. A plan created earlier on\n`day` or `week` keeps returning that value and keeps working.\n",
             examples=["month"],
         ),
     ]
@@ -918,7 +918,7 @@ class SubscriptionPlan(VatlyModel):
         int,
         Field(
             alias="intervalCount",
-            description="Number of interval units between billing cycles.\nFor example, `interval: month` with `intervalCount: 3` bills every 3 months.\n",
+            description="Number of interval units between billing cycles. Always `1` for new\nplans. A plan created earlier may return a higher value, such as\n`interval: month` with `intervalCount: 3` for billing every 3 months.\n",
             examples=[1],
             ge=1,
         ),
@@ -951,7 +951,7 @@ class SubscriptionPlan(VatlyModel):
         Field(
             alias="pendingUpdates",
             description="The changes that will take effect once a submitted update is approved, or\n`null` when there is no pending update. Only the fields that actually\ndiffer from the live plan are present.\n",
-            examples=[{"interval": "week", "intervalCount": 1}],
+            examples=[{"interval": "year", "intervalCount": 1}],
         ),
     ] = None
     update_status: Annotated[
@@ -1019,19 +1019,18 @@ class CreateSubscriptionPlanRequest(VatlyModel):
         ),
     ] = "exclusive"
     interval: Annotated[
-        Literal["day", "week", "month", "year"],
+        Literal["month", "year"],
         Field(
-            description="Billing interval unit. `day` is sandbox-only (test mode); live plans\nsupport `week`, `month`, and `year`.\n",
+            description="Billing interval unit, in both live and test mode. Any other value\nreturns `422`.\n",
             examples=["month"],
         ),
     ]
     interval_count: Annotated[
-        int,
+        Literal[1],
         Field(
             alias="intervalCount",
-            description="Number of interval units between billing cycles. Bounded per unit:\nup to 365 days, 52 weeks, or 12 months. For `year`, billing is always\nannual and this value is ignored.\n",
+            description="Number of interval units between billing cycles. Must be `1`; any\nother value returns `422`.\n",
             examples=[1],
-            ge=1,
         ),
     ]
 
@@ -1682,7 +1681,9 @@ class UpdateSubscriptionPlanRequest(VatlyModel):
     mode it is approved automatically).
 
     The interval cannot be changed once the plan has ever been used by a
-    subscription, active or not. The price stays changeable.
+    subscription, active or not. The price stays changeable. To change the
+    interval, send `interval` and `intervalCount` together, set to `month`
+    or `year` with `intervalCount: 1`; anything else returns `422`.
 
     """
 
@@ -1701,7 +1702,7 @@ class UpdateSubscriptionPlanRequest(VatlyModel):
     ] = None
     description: Annotated[
         str | None,
-        Field(description="New description of the plan.", examples=["Billed weekly"]),
+        Field(description="New description of the plan.", examples=["Billed yearly"]),
     ] = None
     base_price: Annotated[
         EurMoney | None,
@@ -1711,15 +1712,15 @@ class UpdateSubscriptionPlanRequest(VatlyModel):
         Literal["saas"] | None, Field(alias="productType", examples=["saas"])
     ] = None
     interval: Annotated[
-        Literal["day", "week", "month", "year"] | None, Field(examples=["week"])
+        Literal["month", "year"] | None,
+        Field(description="Must be sent together with `intervalCount`.", examples=["year"]),
     ] = None
     interval_count: Annotated[
-        int | None,
+        Literal[1] | None,
         Field(
             alias="intervalCount",
-            description="Required when `interval` is provided.",
+            description="Must be `1`, sent together with `interval`.",
             examples=[1],
-            ge=1,
         ),
     ] = None
 
