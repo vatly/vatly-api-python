@@ -51,6 +51,12 @@ def operation_cases():
     return cases
 
 
+def example_schema(schema, spec):
+    if "$ref" in schema:
+        return spec["components"]["schemas"][schema["$ref"].split("/")[-1]]
+    return schema
+
+
 def test_inventory_covers_spec(spec):
     expected = {
         (verb.upper(), path)
@@ -155,6 +161,12 @@ def test_all_production_operations(spec, asynchronous, namespace, name, method, 
     response = next(v for code, v in operation["responses"].items() if str(code).startswith("2"))
     schema = response.get("content", {}).get("application/json", {}).get("schema")
     body = example(schema, spec) if schema else None
+    request_body = None
+    if "requestBody" in operation:
+        request_schema = operation["requestBody"]["content"]["application/json"]["schema"]
+        request_body = example(request_schema, spec)
+        if "metadata" in example_schema(request_schema, spec).get("properties", {}):
+            request_body["metadata"] = {"intent": "unit-test"}
     calls = []
 
     def handler(request):
@@ -167,7 +179,7 @@ def test_all_production_operations(spec, asynchronous, namespace, name, method, 
             expected_path = expected_path.replace("{" + variable + "}", path_value)
         assert request.url.raw_path.decode() == "/v1" + expected_path
         if "requestBody" in operation:
-            assert json.loads(request.content) == {"metadata": {"intent": "unit-test"}}
+            assert json.loads(request.content) == request_body
         assert request.headers["Authorization"] == f"Bearer {KEY}"
         return httpx.Response(200, json=body) if schema else httpx.Response(204)
 
@@ -186,7 +198,7 @@ def test_all_production_operations(spec, asynchronous, namespace, name, method, 
                     next(v for v in ids if v.lower() == key.replace("_", "").lower()) + "/unsafe?"
                 )
             elif key == "body":
-                args[key] = {"metadata": {"intent": "unit-test"}}
+                args[key] = request_body
         return args
 
     if asynchronous:
@@ -562,3 +574,126 @@ def test_webhook_setup_and_unknown_events(spec):
             assert event.object.resource == "webhook"
         else:
             assert event.object == {"arbitrary": 1}
+
+
+def _sent_bodies(*calls):
+    seen = []
+
+    def handler(r):
+        seen.append(json.loads(r.content))
+        return httpx.Response(204)
+
+    with VatlyClient(KEY, transport=httpx.MockTransport(handler)) as client:
+        for call in calls:
+            # The stub's empty 204 is not a resource; only the sent body matters here.
+            with pytest.raises(vatly.VatlyApiError, match="Invalid Vatly response"):
+                call(client)
+    return seen
+
+
+def test_request_bodies_send_spec_fields_and_spec_nulls_only():
+    from vatly.models import UpdateSubscriptionRequest
+
+    product = {"id": "subscription_plan_a", "price": None, "trialDays": None, "metadata": None}
+    sent = _sent_bodies(
+        # Dictionary input: unknown and non-nullable null fields are dropped at every level.
+        lambda c: c.checkouts.create(
+            {
+                "redirectUrlSuccess": "https://a.test/ok",
+                "redirectUrlCanceled": "https://a.test/no",
+                "products": [{**product, "quantity": None, "unknown": 1}],
+                "metadata": None,
+                "unknownTopLevel": "x",
+            }
+        ),
+        lambda c: c.customers.create({"email": "a@b.test", "metadata": None}),
+        lambda c: c.orders.create_full_refund("order_a", {"metadata": None}),
+        lambda c: c.orders.create_refund(
+            "order_a",
+            {
+                "items": [{"itemId": "a", "amount": {"value": "1.00", "currency": "EUR"}}],
+                "metadata": None,
+            },
+        ),
+        # Model input, including extra attributes the model allows.
+        lambda c: c.subscriptions.update(
+            "subscription_a",
+            UpdateSubscriptionRequest(quantity=None, anchor=None, prorate=True, extra=1),
+        ),
+        lambda c: c.subscriptions.update(
+            "subscription_a", {"anchor": "2026-02-01", "trialUntil": "2026-02-01T10:00:00Z"}
+        ),
+    )
+    assert sent[0] == {
+        "redirectUrlSuccess": "https://a.test/ok",
+        "redirectUrlCanceled": "https://a.test/no",
+        "products": [product],
+        "metadata": None,
+    }
+    assert sent[1] == {"email": "a@b.test", "metadata": None}
+    assert sent[2] == {"metadata": None}
+    assert sent[3]["metadata"] is None
+    assert sent[4] == {"prorate": True, "anchor": None}
+    assert sent[5] == {"anchor": "2026-02-01", "trialUntil": "2026-02-01T10:00:00Z"}
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"trialDays": 0},
+        {"trialDays": -1},
+        {"metadata": {"k": 1}},
+        {"metadata": {"k" * 41: "v"}},
+        {"metadata": {"k": "v" * 501}},
+        {"metadata": {f"k{i}": "v" for i in range(51)}},
+        {"metadata": ["v"]},
+    ],
+)
+def test_invalid_checkout_product_input_is_rejected_before_sending(body):
+    from vatly.models import CheckoutProduct
+
+    with pytest.raises(ValidationError):
+        CheckoutProduct(id="subscription_plan_a", **body)
+    with VatlyClient(KEY, transport=httpx.MockTransport(lambda r: pytest.fail())) as c:
+        with pytest.raises(ValidationError):
+            c.checkouts.create(
+                {
+                    "redirectUrlSuccess": "https://a.test/ok",
+                    "redirectUrlCanceled": "https://a.test/no",
+                    "products": [{"id": "subscription_plan_a", **body}],
+                }
+            )
+
+
+def test_request_metadata_limits_are_inclusive():
+    metadata = {f"{i:040d}": "v" * 500 for i in range(50)}
+    sent = _sent_bodies(
+        lambda c: c.customers.create({"email": "a@b.test", "metadata": metadata}),
+        lambda c: c.orders.create_full_refund("order_a", {"metadata": metadata}),
+    )
+    assert [body["metadata"] for body in sent] == [metadata, metadata]
+    with pytest.raises(ValidationError):
+        with VatlyClient(KEY, transport=httpx.MockTransport(lambda r: pytest.fail())) as c:
+            c.orders.create_full_refund("order_a", {"metadata": {"a": None}})
+
+
+def test_refund_metadata_is_typed_in_resources_and_webhooks(spec):
+    from vatly.models import Refund
+
+    refund = example(spec["components"]["schemas"]["Refund"], spec)
+    assert "metadata" in refund
+    assert Refund.model_validate({**refund, "metadata": None}).metadata is None
+    parsed = Refund.model_validate({**refund, "metadata": {"ticketId": "SUPPORT-1"}})
+    assert parsed.metadata.root == {"ticketId": "SUPPORT-1"}
+    payload = example(spec["components"]["schemas"]["WebhookDelivery"], spec)
+    payload.update(
+        eventName="refund.completed",
+        entityType="refund",
+        entityId=refund["id"],
+        object={**refund, "metadata": {"ticketId": "SUPPORT-1"}},
+    )
+    raw = json.dumps(payload).encode()
+    signature = compute_signature_v1(raw, "secret", 100)
+    event = construct_webhook_event(raw, f"t=100,v1={signature}", "secret", now=100)
+    assert isinstance(event.object, Refund)
+    assert event.object.metadata.root == {"ticketId": "SUPPORT-1"}

@@ -52,7 +52,13 @@ class Checkouts:
     ) -> models.Checkout:
         """Create a checkout."""
         return self._transport.request(
-            "POST", "/checkouts", models.Checkout, body=body, params=None, options=options
+            "POST",
+            "/checkouts",
+            models.Checkout,
+            body=body,
+            body_type=models.CreateCheckoutRequest,
+            params=None,
+            options=options,
         )
 
     def get(self, checkout_id: str, *, options: RequestOptions | None = None) -> models.Checkout:
@@ -109,7 +115,13 @@ class AsyncCheckouts:
     ) -> models.Checkout:
         """Create a checkout."""
         return await self._transport.request(
-            "POST", "/checkouts", models.Checkout, body=body, params=None, options=options
+            "POST",
+            "/checkouts",
+            models.Checkout,
+            body=body,
+            body_type=models.CreateCheckoutRequest,
+            params=None,
+            options=options,
         )
 
     async def get(
@@ -167,7 +179,13 @@ class Customers:
     ) -> models.Customer:
         """Create a customer."""
         return self._transport.request(
-            "POST", "/customers", models.Customer, body=body, params=None, options=options
+            "POST",
+            "/customers",
+            models.Customer,
+            body=body,
+            body_type=models.CreateCustomerRequest,
+            params=None,
+            options=options,
         )
 
     def get(self, customer_id: str, *, options: RequestOptions | None = None) -> models.Customer:
@@ -194,6 +212,7 @@ class Customers:
             f"/customers/{quote(customer_id, safe='')}",
             models.Customer,
             body=body,
+            body_type=models.UpdateCustomerRequest,
             params=None,
             options=options,
         )
@@ -211,6 +230,7 @@ class Customers:
             f"/customers/{quote(customer_id, safe='')}/portal-sessions",
             models.PortalSession,
             body=body,
+            body_type=models.CreatePortalSessionRequest,
             params=None,
             options=options,
         )
@@ -307,7 +327,13 @@ class AsyncCustomers:
     ) -> models.Customer:
         """Create a customer."""
         return await self._transport.request(
-            "POST", "/customers", models.Customer, body=body, params=None, options=options
+            "POST",
+            "/customers",
+            models.Customer,
+            body=body,
+            body_type=models.CreateCustomerRequest,
+            params=None,
+            options=options,
         )
 
     async def get(
@@ -336,6 +362,7 @@ class AsyncCustomers:
             f"/customers/{quote(customer_id, safe='')}",
             models.Customer,
             body=body,
+            body_type=models.UpdateCustomerRequest,
             params=None,
             options=options,
         )
@@ -353,6 +380,7 @@ class AsyncCustomers:
             f"/customers/{quote(customer_id, safe='')}/portal-sessions",
             models.PortalSession,
             body=body,
+            body_type=models.CreatePortalSessionRequest,
             params=None,
             options=options,
         )
@@ -458,6 +486,7 @@ class OneOffProducts:
             "/one-off-products",
             models.OneOffProduct,
             body=body,
+            body_type=models.CreateOneOffProductRequest,
             params=None,
             options=options,
         )
@@ -488,6 +517,7 @@ class OneOffProducts:
             f"/one-off-products/{quote(one_off_product_id, safe='')}",
             models.OneOffProduct,
             body=body,
+            body_type=models.UpdateOneOffProductRequest,
             params=None,
             options=options,
         )
@@ -568,6 +598,7 @@ class AsyncOneOffProducts:
             "/one-off-products",
             models.OneOffProduct,
             body=body,
+            body_type=models.CreateOneOffProductRequest,
             params=None,
             options=options,
         )
@@ -598,6 +629,7 @@ class AsyncOneOffProducts:
             f"/one-off-products/{quote(one_off_product_id, safe='')}",
             models.OneOffProduct,
             body=body,
+            body_type=models.UpdateOneOffProductRequest,
             params=None,
             options=options,
         )
@@ -679,6 +711,7 @@ class SubscriptionPlans:
             "/subscription-plans",
             models.SubscriptionPlan,
             body=body,
+            body_type=models.CreateSubscriptionPlanRequest,
             params=None,
             options=options,
         )
@@ -709,6 +742,7 @@ class SubscriptionPlans:
             f"/subscription-plans/{quote(subscription_plan_id, safe='')}",
             models.SubscriptionPlan,
             body=body,
+            body_type=models.UpdateSubscriptionPlanRequest,
             params=None,
             options=options,
         )
@@ -789,6 +823,7 @@ class AsyncSubscriptionPlans:
             "/subscription-plans",
             models.SubscriptionPlan,
             body=body,
+            body_type=models.CreateSubscriptionPlanRequest,
             params=None,
             options=options,
         )
@@ -819,6 +854,7 @@ class AsyncSubscriptionPlans:
             f"/subscription-plans/{quote(subscription_plan_id, safe='')}",
             models.SubscriptionPlan,
             body=body,
+            body_type=models.UpdateSubscriptionPlanRequest,
             params=None,
             options=options,
         )
@@ -956,6 +992,7 @@ class Orders:
             f"/orders/{quote(order_id, safe='')}/refunds",
             models.Refund,
             body=body,
+            body_type=models.CreateRefundRequest,
             params=None,
             options=options,
         )
@@ -973,6 +1010,7 @@ class Orders:
             f"/orders/{quote(order_id, safe='')}/refunds/full",
             models.Refund,
             body=body,
+            body_type=models.CreateFullRefundRequest,
             params=None,
             options=options,
         )
@@ -1161,6 +1199,7 @@ class AsyncOrders:
             f"/orders/{quote(order_id, safe='')}/refunds",
             models.Refund,
             body=body,
+            body_type=models.CreateRefundRequest,
             params=None,
             options=options,
         )
@@ -1178,6 +1217,7 @@ class AsyncOrders:
             f"/orders/{quote(order_id, safe='')}/refunds/full",
             models.Refund,
             body=body,
+            body_type=models.CreateFullRefundRequest,
             params=None,
             options=options,
         )
@@ -1539,6 +1579,7 @@ class WebhookEndpoints:
             "/webhook-endpoints",
             models.WebhookEndpoint,
             body=body,
+            body_type=models.CreateWebhookEndpointRequest,
             params=None,
             options=options,
         )
@@ -1569,6 +1610,7 @@ class WebhookEndpoints:
             f"/webhook-endpoints/{quote(webhook_endpoint_id, safe='')}",
             models.WebhookEndpoint,
             body=body,
+            body_type=models.UpdateWebhookEndpointRequest,
             params=None,
             options=options,
         )
@@ -1636,6 +1678,7 @@ class AsyncWebhookEndpoints:
             "/webhook-endpoints",
             models.WebhookEndpoint,
             body=body,
+            body_type=models.CreateWebhookEndpointRequest,
             params=None,
             options=options,
         )
@@ -1666,6 +1709,7 @@ class AsyncWebhookEndpoints:
             f"/webhook-endpoints/{quote(webhook_endpoint_id, safe='')}",
             models.WebhookEndpoint,
             body=body,
+            body_type=models.UpdateWebhookEndpointRequest,
             params=None,
             options=options,
         )
@@ -1748,6 +1792,7 @@ class Subscriptions:
             f"/subscriptions/{quote(subscription_id, safe='')}",
             models.Subscription,
             body=body,
+            body_type=models.UpdateSubscriptionRequest,
             params=None,
             options=options,
         )
@@ -1782,6 +1827,7 @@ class Subscriptions:
             f"/subscriptions/{quote(subscription_id, safe='')}/billing-update-link",
             models.CreateSubscriptionBillingUpdateLinkResponse,
             body=body,
+            body_type=models.UpdateSubscriptionBillingRequest,
             params=None,
             options=options,
         )
@@ -1865,6 +1911,7 @@ class AsyncSubscriptions:
             f"/subscriptions/{quote(subscription_id, safe='')}",
             models.Subscription,
             body=body,
+            body_type=models.UpdateSubscriptionRequest,
             params=None,
             options=options,
         )
@@ -1899,6 +1946,7 @@ class AsyncSubscriptions:
             f"/subscriptions/{quote(subscription_id, safe='')}/billing-update-link",
             models.CreateSubscriptionBillingUpdateLinkResponse,
             body=body,
+            body_type=models.UpdateSubscriptionBillingRequest,
             params=None,
             options=options,
         )
@@ -1936,6 +1984,7 @@ class TestHelpers:
             f"/test-helpers/subscriptions/{quote(subscription_id, safe='')}/fast-forward-renewal",
             models.Subscription,
             body=body,
+            body_type=models.FastForwardSubscriptionRenewalRequest,
             params=None,
             options=options,
         )
@@ -1955,6 +2004,7 @@ class TestHelpers:
             f"/test-helpers/orders/{quote(order_id, safe='')}/simulate-payment",
             models.Order,
             body=body,
+            body_type=models.SimulateOrderPaymentRequest,
             params=None,
             options=options,
         )
@@ -1979,6 +2029,7 @@ class AsyncTestHelpers:
             f"/test-helpers/subscriptions/{quote(subscription_id, safe='')}/fast-forward-renewal",
             models.Subscription,
             body=body,
+            body_type=models.FastForwardSubscriptionRenewalRequest,
             params=None,
             options=options,
         )
@@ -1998,6 +2049,7 @@ class AsyncTestHelpers:
             f"/test-helpers/orders/{quote(order_id, safe='')}/simulate-payment",
             models.Order,
             body=body,
+            body_type=models.SimulateOrderPaymentRequest,
             params=None,
             options=options,
         )

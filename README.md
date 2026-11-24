@@ -47,8 +47,11 @@ async def read_orders():
 ```
 
 Pydantic models use snake_case attributes and accept Vatly's camelCase aliases.
-Dictionary inputs use **wire-format camelCase keys**. Model requests serialize with
-aliases and omit unset fields; explicitly supplied `None` is sent as JSON null.
+Dictionary inputs use **wire-format camelCase keys**. Request models and dictionaries are
+validated against the pinned specification before sending, then sent with aliases and
+only the fields you set. Fields the specification does not define are dropped, and
+`None` is sent as JSON null only where the specification allows null; elsewhere the
+field is omitted.
 Money values remain decimal **strings**, never floats.
 
 ## Configuration and reliability

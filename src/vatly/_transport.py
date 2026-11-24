@@ -18,6 +18,7 @@ import httpx
 from pydantic import BaseModel, TypeAdapter, ValidationError
 from typing_extensions import Self
 
+from ._model import to_wire
 from ._version import __version__
 from .errors import (
     VatlyApiError,
@@ -113,6 +114,20 @@ class _Transport:
             return value.model_dump(mode="json", by_alias=True, exclude_unset=True)
         return dict(value) if value is not None else None
 
+    @staticmethod
+    def _body(
+        value: BaseModel | dict[str, Any] | None, body_type: type[BaseModel] | None
+    ) -> dict[str, Any] | None:
+        if value is None:
+            return None
+        if body_type is not None and not isinstance(value, BaseModel):
+            # Dictionaries get the same validation as request models before sending.
+            value = body_type.model_validate(value)
+        if not isinstance(value, BaseModel):
+            return dict(value)
+        wire: dict[str, Any] = to_wire(value)
+        return wire
+
     def _prepare(
         self,
         method: str,
@@ -120,6 +135,7 @@ class _Transport:
         body: BaseModel | dict[str, Any] | None,
         params: BaseModel | dict[str, Any] | None,
         options: RequestOptions | None,
+        body_type: type[BaseModel] | None = None,
     ) -> tuple[dict[str, Any], bool]:
         opts = options or RequestOptions()
         headers = self._headers.copy()
@@ -142,7 +158,7 @@ class _Transport:
             "url": self.base_url + path,
             "headers": headers,
             "params": query,
-            "json": self.serialize(body),
+            "json": self._body(body, body_type),
             "timeout": _timeout(self.timeout if opts.timeout is None else opts.timeout),
         }, method in {"GET", "HEAD", "OPTIONS"} or bool(key)
 
@@ -219,10 +235,11 @@ class SyncTransport(_Transport):
         response_type: type[T],
         *,
         body: BaseModel | dict[str, Any] | None = None,
+        body_type: type[BaseModel] | None = None,
         params: BaseModel | dict[str, Any] | None = None,
         options: RequestOptions | None = None,
     ) -> T:
-        kwargs, retryable = self._prepare(method, path, body, params, options)
+        kwargs, retryable = self._prepare(method, path, body, params, options, body_type)
         for attempt in range(self.max_retries + 1):
             try:
                 response = self._http.request(**kwargs)
@@ -259,10 +276,11 @@ class AsyncTransport(_Transport):
         response_type: type[T],
         *,
         body: BaseModel | dict[str, Any] | None = None,
+        body_type: type[BaseModel] | None = None,
         params: BaseModel | dict[str, Any] | None = None,
         options: RequestOptions | None = None,
     ) -> T:
-        kwargs, retryable = self._prepare(method, path, body, params, options)
+        kwargs, retryable = self._prepare(method, path, body, params, options, body_type)
         for attempt in range(self.max_retries + 1):
             try:
                 response = await self._http.request(**kwargs)

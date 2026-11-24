@@ -121,6 +121,7 @@ class BillingAddress(VatlyModel):
             alias="fullName",
             description="Full name of the person or contact",
             examples=["John Doe"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
     company_name: Annotated[
@@ -129,6 +130,7 @@ class BillingAddress(VatlyModel):
             alias="companyName",
             description="Company or organization name",
             examples=["Acme Corp"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
     tax_id: Annotated[
@@ -137,6 +139,7 @@ class BillingAddress(VatlyModel):
             alias="taxId",
             description="Tax identification number for tax purposes",
             examples=["NL123456789B01"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
     street_and_number: Annotated[
@@ -145,6 +148,7 @@ class BillingAddress(VatlyModel):
             alias="streetAndNumber",
             description="Street address including building number",
             examples=["123 Main Street"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
     street_additional: Annotated[
@@ -153,22 +157,40 @@ class BillingAddress(VatlyModel):
             alias="streetAdditional",
             description="Additional address information (apartment, suite, etc.)",
             examples=["Suite 456"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
-    city: Annotated[str | None, Field(description="City name", examples=["Amsterdam"])] = None
+    city: Annotated[
+        str | None,
+        Field(
+            description="City name",
+            examples=["Amsterdam"],
+            json_schema_extra={"x-vatly-nullable": True},
+        ),
+    ] = None
     region: Annotated[
         str | None,
-        Field(description="State, province, or region", examples=["North Holland"]),
+        Field(
+            description="State, province, or region",
+            examples=["North Holland"],
+            json_schema_extra={"x-vatly-nullable": True},
+        ),
     ] = None
     postal_code: Annotated[
         str | None,
-        Field(alias="postalCode", description="Postal or ZIP code", examples=["1012 AB"]),
+        Field(
+            alias="postalCode",
+            description="Postal or ZIP code",
+            examples=["1012 AB"],
+            json_schema_extra={"x-vatly-nullable": True},
+        ),
     ] = None
     country: Annotated[
         str | None,
         Field(
             description="ISO 3166-1 alpha-2 country code",
             examples=["NL"],
+            json_schema_extra={"x-vatly-nullable": True},
             max_length=2,
             min_length=2,
         ),
@@ -422,7 +444,31 @@ class Checkout(VatlyModel):
     ]
     metadata: Metadata | None = None
     locale: Annotated[
-        Literal["en", "de", "fr", "nl", "es", "it", "pt", "pl"] | None,
+        Literal[
+            "en",
+            "de",
+            "fr",
+            "nl",
+            "es",
+            "it",
+            "pt",
+            "pl",
+            "cs",
+            "ca",
+            "da",
+            "el",
+            "fi",
+            "hu",
+            "is",
+            "lt",
+            "lv",
+            "nb",
+            "sk",
+            "sl",
+            "sv",
+            "tr",
+        ]
+        | None,
         Field(
             description="The language you asked the hosted checkout to be presented in, as sent on\ncreation. `null` means you did not specify one, and the checkout picks a\nlanguage from the shopper's browser.\n",
             examples=["de"],
@@ -477,19 +523,29 @@ class CheckoutProduct(VatlyModel):
     price: Annotated[
         EurMoney | None,
         Field(
-            description="Custom price override for this product, in EUR. If not provided, the\nproduct's default price is used.\n\nCurrently only EUR is accepted; any other currency returns a `422`.\nWhen the customer pays in another currency, the amount is converted\nfrom this EUR price at checkout. For a subscription, the converted\namount and currency are then fixed, so renewals charge the same amount.\n"
+            description="Custom price override for this product, in EUR. If not provided, the\nproduct's default price is used.\n\nCurrently only EUR is accepted; any other currency returns a `422`.\nWhen the customer pays in another currency, the amount is converted\nfrom this EUR price at checkout. For a subscription, the converted\namount and currency are then fixed, so renewals charge the same amount.\n",
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
     trial_days: Annotated[
         int | None,
         Field(
             alias="trialDays",
-            description="Trial period in days for subscription plans.\nOnly applicable when `id` references a subscription plan.\n",
+            description="Trial period in days for subscription plans.\nOnly allowed when `id` references a subscription plan; on any other\nproduct a value returns a `422`.\nOmit it or send `null` for no trial.\n",
             examples=[14],
-            ge=0,
+            ge=1,
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
-    metadata: Metadata | None = None
+    metadata: Annotated[
+        Metadata | None,
+        Field(
+            json_schema_extra={
+                "x-vatly-nullable": True,
+                "x-vatly-request-metadata": True,
+            }
+        ),
+    ] = None
 
 
 class CreateCheckoutRequest(VatlyModel):
@@ -523,6 +579,7 @@ class CreateCheckoutRequest(VatlyModel):
             alias="customerId",
             description="Existing customer ID to associate with this checkout.\nIf provided, the customer's email will be pre-filled.\nMust match the testmode of the API token.\n",
             examples=["customer_7kBmRtPvXw2NjLhYcZaE"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
     billing_address: Annotated[
@@ -532,12 +589,21 @@ class CreateCheckoutRequest(VatlyModel):
             description="Optional editable prefill for the billing address fields on the hosted\ncheckout. When `country` is supplied, it takes precedence over the\nshopper's IP address for determining their country. A supplied `taxId`\nis only a prefill; it is not registered until the buyer submits the\ncheckout.\n",
         ),
     ] = None
-    metadata: Metadata | None = None
+    metadata: Annotated[
+        Metadata | None,
+        Field(
+            json_schema_extra={
+                "x-vatly-nullable": True,
+                "x-vatly-request-metadata": True,
+            }
+        ),
+    ] = None
     locale: Annotated[
         str | None,
         Field(
-            description="Language to present the hosted checkout in, including its validation and\nerror messages. Set this when you already know the customer's language —\nit is a better signal than their browser's.\n\nSend a bare language code (`de`), a BCP 47 tag (`de-AT`), or a POSIX /\nISO 15897 locale (`de_DE`) — whichever your stack already stores. All\nthree are folded to the language, so `de`, `de-AT` and `de_DE` are the\nsame request. There are no region-specific variants: an Austrian and a\nGerman customer are both served `de`.\n\nThe language also carries through to the payment provider's own hosted\npage, in whatever format that provider expects.\n\nSupported languages: `en`, `de`, `fr`, `nl`, `es`, `it`, `pt`, `pl`.\nAnything else is a `422` naming the supported set.\n\nOmit it (or send `null`) to detect the language from the shopper's\n`Accept-Language` header, falling back to English. A shopper can always\noverride your choice with the checkout's own language switcher.\n\nThe response echoes back the folded language, not the string you sent.\n",
+            description="Language to present the hosted checkout in, including its validation and\nerror messages. Set this when you already know the customer's language —\nit is a better signal than their browser's.\n\nSend a bare language code (`de`), a BCP 47 tag (`de-AT`), or a POSIX /\nISO 15897 locale (`de_DE`) — whichever your stack already stores. All\nthree are folded to the language, so `de`, `de-AT` and `de_DE` are the\nsame request. There are no region-specific variants: an Austrian and a\nGerman customer are both served `de`.\n\nThe language also carries through to the payment provider's own hosted\npage, in whatever format that provider expects.\n\nSupported languages: `en`, `de`, `fr`, `nl`, `es`, `it`, `pt`, `pl`,\n`cs`, `ca`, `da`, `el`, `fi`, `hu`, `is`, `lt`, `lv`, `nb`, `sk`, `sl`,\n`sv`, `tr`. Norwegian is served as `nb`; `no` and `nn` fold to it.\nAnything else is a `422` naming the supported set.\n\nOmit it (or send `null`) to detect the language from the shopper's\n`Accept-Language` header, falling back to English. A shopper can always\noverride your choice with the checkout's own language switcher.\n\nThe response echoes back the folded language, not the string you sent.\n",
             examples=["de"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
     products: Annotated[
@@ -641,10 +707,19 @@ class CreateCustomerRequest(VatlyModel):
         Field(
             description="Customer's display / account-holder name.",
             examples=["John Doe"],
+            json_schema_extra={"x-vatly-nullable": True},
             max_length=255,
         ),
     ] = None
-    metadata: Metadata | None = None
+    metadata: Annotated[
+        Metadata | None,
+        Field(
+            json_schema_extra={
+                "x-vatly-nullable": True,
+                "x-vatly-request-metadata": True,
+            }
+        ),
+    ] = None
 
 
 class PendingUpdates(VatlyModel):
@@ -662,7 +737,10 @@ class PendingUpdates(VatlyModel):
     name: Annotated[str | None, Field(examples=["Premium License v2"])] = None
     description: Annotated[str | None, Field(examples=["Now with more premium"])] = None
     base_price: Annotated[Money | None, Field(alias="basePrice")] = None
-    product_type: Annotated[Literal["saas", "ebook"] | None, Field(alias="productType")] = None
+    product_type: Annotated[
+        Literal["saas", "ebook", "digital_download", "online_course", "audiobook"] | None,
+        Field(alias="productType"),
+    ] = None
 
 
 class Links2(VatlyModel):
@@ -734,7 +812,7 @@ class OneOffProduct(VatlyModel):
         str,
         Field(
             alias="productType",
-            description="What kind of product this is:\n- `saas` — software supplied as a service (hosted, licensed or otherwise\n  delivered online)\n- `ebook` — an electronic publication supplied as a download or stream\n\nSet when the product is created. Subscription plans accept `saas` only;\nan e-book is a one-time purchase, so sell it as a one-off product.\n",
+            description="What kind of product this is:\n- `saas` — software supplied as a service (hosted, licensed or otherwise\n  delivered online)\n- `ebook` — an electronic publication supplied as a download or stream\n- `digital_download` — files the customer keeps that aren't a book or\n  software, such as photos, fonts, templates or music\n- `online_course` — recorded lessons the customer follows at their own pace\n- `audiobook` — a book to listen to, streamed or downloaded\n\nSet when the product is created. Subscription plans accept `saas` only;\ne-books, digital downloads, online courses and audiobooks are one-time\npurchases, so sell them as one-off products.\n",
             examples=["saas"],
         ),
     ]
@@ -809,10 +887,10 @@ class CreateOneOffProductRequest(VatlyModel):
         EurMoney, Field(alias="basePrice", description="Price of the product, in EUR.")
     ]
     product_type: Annotated[
-        Literal["saas", "ebook"],
+        Literal["saas", "ebook", "digital_download", "online_course", "audiobook"],
         Field(
             alias="productType",
-            description="What kind of product this is:\n- `saas` — software supplied as a service (hosted, licensed or otherwise\n  delivered online)\n- `ebook` — an electronic publication supplied as a download or stream\n\nSet when the product is created. Subscription plans accept `saas` only;\nan e-book is a one-time purchase, so sell it as a one-off product.\n",
+            description="What kind of product this is:\n- `saas` — software supplied as a service (hosted, licensed or otherwise\n  delivered online)\n- `ebook` — an electronic publication supplied as a download or stream\n- `digital_download` — files the customer keeps that aren't a book or\n  software, such as photos, fonts, templates or music\n- `online_course` — recorded lessons the customer follows at their own pace\n- `audiobook` — a book to listen to, streamed or downloaded\n\nSet when the product is created. Subscription plans accept `saas` only;\ne-books, digital downloads, online courses and audiobooks are one-time\npurchases, so sell them as one-off products.\n",
             examples=["saas"],
         ),
     ]
@@ -838,7 +916,7 @@ class PendingUpdates1(VatlyModel):
         extra="allow",
         populate_by_name=True,
     )
-    name: Annotated[str | None, Field(examples=["Pro Weekly"])] = None
+    name: Annotated[str | None, Field(examples=["Pro Yearly"])] = None
     description: Annotated[str | None, Field(examples=["Billed yearly"])] = None
     base_price: Annotated[Money | None, Field(alias="basePrice")] = None
     interval: Literal["day", "week", "month", "year"] | None = None
@@ -910,7 +988,7 @@ class SubscriptionPlan(VatlyModel):
     interval: Annotated[
         Literal["day", "week", "month", "year"],
         Field(
-            description="Billing interval unit:\n- `month` - Monthly billing\n- `year` - Yearly billing\n\nNew plans are always `month` or `year`. A plan created earlier on\n`day` or `week` keeps returning that value and keeps working.\n",
+            description="Billing interval unit:\n- `day` - Daily billing\n- `week` - Weekly billing\n- `month` - Monthly billing\n- `year` - Yearly billing\n\nNew plans and interval changes accept only `month` or `year` with\n`intervalCount: 1`. `day` and `week` appear only on plans created\nbefore that restriction.\n",
             examples=["month"],
         ),
     ]
@@ -918,7 +996,7 @@ class SubscriptionPlan(VatlyModel):
         int,
         Field(
             alias="intervalCount",
-            description="Number of interval units between billing cycles. Always `1` for new\nplans. A plan created earlier may return a higher value, such as\n`interval: month` with `intervalCount: 3` for billing every 3 months.\n",
+            description="Number of interval units between billing cycles. Always `1` for new\nplans and interval changes; plans created before that restriction may\ncarry another value.\n",
             examples=[1],
             ge=1,
         ),
@@ -1021,7 +1099,7 @@ class CreateSubscriptionPlanRequest(VatlyModel):
     interval: Annotated[
         Literal["month", "year"],
         Field(
-            description="Billing interval unit, in both live and test mode. Any other value\nreturns `422`.\n",
+            description="Billing interval unit: `month` or `year`, in live and test mode alike.\n",
             examples=["month"],
         ),
     ]
@@ -1029,7 +1107,7 @@ class CreateSubscriptionPlanRequest(VatlyModel):
         Literal[1],
         Field(
             alias="intervalCount",
-            description="Number of interval units between billing cycles. Must be `1`; any\nother value returns `422`.\n",
+            description="Number of interval units between billing cycles. Must be `1`: a plan\nbills every month or every year.\n",
             examples=[1],
         ),
     ]
@@ -1148,7 +1226,15 @@ class CreateFullRefundRequest(VatlyModel):
         extra="allow",
         populate_by_name=True,
     )
-    metadata: Metadata | None = None
+    metadata: Annotated[
+        Metadata | None,
+        Field(
+            json_schema_extra={
+                "x-vatly-nullable": True,
+                "x-vatly-request-metadata": True,
+            }
+        ),
+    ] = None
 
 
 class Links6(VatlyModel):
@@ -1443,6 +1529,7 @@ class UpdateSubscriptionRequest(VatlyModel):
         Field(
             description="Set the billing anchor to a specific calendar date (YYYY-MM-DD,\ninterpreted in UTC). The new billing cycle is recalculated around\nthis anchor. Date-only by design — the anchor identifies a day,\nnot an instant, so daylight-saving transitions don't shift it.\nCannot be combined with `resetAnchor`.\n",
             examples=["2024-02-01"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
     reset_anchor: Annotated[
@@ -1459,6 +1546,7 @@ class UpdateSubscriptionRequest(VatlyModel):
             alias="trialUntil",
             description="Extend or set a trial period until this date (ISO 8601 format).\nCannot be combined with `anchor`.\n",
             examples=["2024-02-15T00:00:00Z"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
 
@@ -1493,6 +1581,7 @@ class UpdateSubscriptionBillingRequest(VatlyModel):
         Field(
             alias="billingAddress",
             description="Optional editable prefill for the hosted billing update form. When\nsupplied, it replaces the subscription's stored billing details as the\nprefill, so send every field you want shown; empty strings give a blank\nform. Omit it, or send `null` or `{}`, to prefill the stored details.\n`country` must be an ISO 3166-1 alpha-2 code. A supplied `taxId` is\nonly a prefill; it is not registered until the customer submits the\nform.\n",
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
 
@@ -1551,6 +1640,7 @@ class UpdateCustomerRequest(VatlyModel):
         Field(
             description="Customer's display / account-holder name.",
             examples=["John Doe"],
+            json_schema_extra={"x-vatly-nullable": True},
             max_length=255,
         ),
     ] = None
@@ -1581,6 +1671,7 @@ class CreatePortalSessionRequest(VatlyModel):
             alias="returnUrl",
             description="Absolute HTTPS URL without embedded credentials, rendered as a return\nlink in the hosted portal. The runtime limit is 2,048 UTF-8 bytes.\nVatly never fetches or automatically redirects to this URL.\n",
             examples=["https://merchant.example/account/billing"],
+            json_schema_extra={"x-vatly-nullable": True},
             max_length=2048,
             pattern="^[Hh][Tt][Tt][Pp][Ss]://",
         ),
@@ -1662,10 +1753,10 @@ class UpdateOneOffProductRequest(VatlyModel):
         Field(alias="basePrice", description="New price of the product, in EUR."),
     ] = None
     product_type: Annotated[
-        Literal["saas", "ebook"] | None,
+        Literal["saas", "ebook", "digital_download", "online_course", "audiobook"] | None,
         Field(
             alias="productType",
-            description="What kind of product this is:\n- `saas` — software supplied as a service (hosted, licensed or otherwise\n  delivered online)\n- `ebook` — an electronic publication supplied as a download or stream\n\nSet when the product is created. Subscription plans accept `saas` only;\nan e-book is a one-time purchase, so sell it as a one-off product.\n",
+            description="What kind of product this is:\n- `saas` — software supplied as a service (hosted, licensed or otherwise\n  delivered online)\n- `ebook` — an electronic publication supplied as a download or stream\n- `digital_download` — files the customer keeps that aren't a book or\n  software, such as photos, fonts, templates or music\n- `online_course` — recorded lessons the customer follows at their own pace\n- `audiobook` — a book to listen to, streamed or downloaded\n\nSet when the product is created. Subscription plans accept `saas` only;\ne-books, digital downloads, online courses and audiobooks are one-time\npurchases, so sell them as one-off products.\n",
             examples=["saas"],
         ),
     ] = None
@@ -1681,9 +1772,7 @@ class UpdateSubscriptionPlanRequest(VatlyModel):
     mode it is approved automatically).
 
     The interval cannot be changed once the plan has ever been used by a
-    subscription, active or not. The price stays changeable. To change the
-    interval, send `interval` and `intervalCount` together, set to `month`
-    or `year` with `intervalCount: 1`; anything else returns `422`.
+    subscription, active or not. The price stays changeable.
 
     """
 
@@ -1695,7 +1784,7 @@ class UpdateSubscriptionPlanRequest(VatlyModel):
         str | None,
         Field(
             description="New display name of the plan.",
-            examples=["Pro Weekly"],
+            examples=["Pro Yearly"],
             max_length=255,
             min_length=3,
         ),
@@ -1713,13 +1802,16 @@ class UpdateSubscriptionPlanRequest(VatlyModel):
     ] = None
     interval: Annotated[
         Literal["month", "year"] | None,
-        Field(description="Must be sent together with `intervalCount`.", examples=["year"]),
+        Field(
+            description="New billing interval unit: `month` or `year`, in live and test mode\nalike. Required when `intervalCount` is provided.\n",
+            examples=["year"],
+        ),
     ] = None
     interval_count: Annotated[
         Literal[1] | None,
         Field(
             alias="intervalCount",
-            description="Must be `1`, sent together with `interval`.",
+            description="Must be `1`. Required when `interval` is provided.",
             examples=[1],
         ),
     ] = None
@@ -1787,6 +1879,7 @@ class RefundItem(VatlyModel):
         Field(
             description="Custom description for this refund line",
             examples=["Partial refund for service issue"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
     description_additional_line: Annotated[
@@ -1795,6 +1888,7 @@ class RefundItem(VatlyModel):
             alias="descriptionAdditionalLine",
             description="Additional description line for the refund",
             examples=["Ticket #12345"],
+            json_schema_extra={"x-vatly-nullable": True},
         ),
     ] = None
 
@@ -2286,7 +2380,15 @@ class CreateRefundRequest(VatlyModel):
             min_length=1,
         ),
     ]
-    metadata: Metadata | None = None
+    metadata: Annotated[
+        Metadata | None,
+        Field(
+            json_schema_extra={
+                "x-vatly-nullable": True,
+                "x-vatly-request-metadata": True,
+            }
+        ),
+    ] = None
 
 
 class Chargeback(VatlyModel):
@@ -2709,7 +2811,7 @@ class Order(VatlyModel):
         Money,
         Field(
             alias="refundableSubtotal",
-            description="Remaining amount that can still be refunded, before taxes.",
+            description="Remaining amount that can still be refunded, before taxes. Always zero\nfor an order that is not a sale (any order type other than\n`checkout_order` and `mandated_order`, such as a payment-method\nauthorization or a verification charge), because such orders cannot\nbe refunded.\n",
         ),
     ]
     tax_summary: Annotated[
@@ -2752,6 +2854,12 @@ class Refund(VatlyModel):
             alias="orderId",
             description="ID of the credit note order created for this refund. Always present in\nthe payload; `null` until the refund is processed, then set to the\ncredit-note order id.\n",
             examples=["order_Vr8kQdFhSrG4Y3DnfsdqH"],
+        ),
+    ] = None
+    metadata: Annotated[
+        Metadata | None,
+        Field(
+            description="The `metadata` sent when the refund was created. Always present;\n`null` when none was sent, including for refunds created before\nmetadata was stored.\n"
         ),
     ] = None
     customer_id: Annotated[

@@ -13,9 +13,12 @@ def example(schema, spec):
     if "$ref" in schema:
         return example(spec["components"]["schemas"][schema["$ref"].split("/")[-1]], spec)
     if "allOf" in schema:
+        parts = [example(part, spec) for part in schema["allOf"]]
+        if None in parts:
+            return None
         result = {}
-        for part in schema["allOf"]:
-            result.update(example(part, spec))
+        for part in parts:
+            result.update(part)
         return result
     if "oneOf" in schema and "properties" not in schema:
         return example(schema["oneOf"][0], spec)

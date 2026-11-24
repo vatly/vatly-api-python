@@ -96,9 +96,48 @@ def generate(out: Path) -> None:
         variant["properties"]["value"].update(branch["properties"]["value"])
         variants.append(variant)
     schemas["Money"] = {"description": money["description"], "oneOf": variants}
-    # Production currently returns catalogue values such as `digital_download`
-    # beyond this output enum. Preserve them; keep request enums constrained.
+    # Keep the response product type open so catalogue values added before the
+    # next spec sync still parse; request enums stay constrained.
     schemas["OneOffProduct"]["properties"]["productType"].pop("enum", None)
+
+    # Mark request-body fields so the base model sends only spec-defined fields,
+    # sends null only where the spec allows it, and validates request metadata.
+    def nullable(schema: dict) -> bool:
+        if "$ref" in schema:
+            return nullable(schemas[schema["$ref"].split("/")[-1]])
+        kinds = schema.get("type")
+        return (
+            schema.get("nullable") is True
+            or kinds == "null"
+            or (isinstance(kinds, list) and "null" in kinds)
+            or any(nullable(s) for s in schema.get("oneOf", []) + schema.get("anyOf", []))
+            or (bool(schema.get("allOf")) and all(nullable(s) for s in schema["allOf"]))
+        )
+
+    def mark(schema: dict, seen: set[str]) -> None:
+        if "$ref" in schema:
+            name = schema["$ref"].split("/")[-1]
+            if name not in seen:
+                seen.add(name)
+                mark(schemas[name], seen)
+            return
+        for prop in schema.get("properties", {}).values():
+            if nullable(prop):
+                prop["x-vatly-nullable"] = True
+            if prop.get("$ref", "").endswith("/Metadata"):
+                prop["x-vatly-request-metadata"] = True
+            mark(prop, seen)
+        for key in ("items", "additionalProperties"):
+            if isinstance(schema.get(key), dict):
+                mark(schema[key], seen)
+        for key in ("oneOf", "anyOf", "allOf"):
+            for part in schema.get(key, []):
+                mark(part, seen)
+
+    marked: set[str] = set()
+    for operation in operations:
+        if operation[6]:
+            mark(operation[6], marked)
     schema_file = out / "schema.json"
     schema_file.write_text(
         json.dumps({"$defs": schemas}).replace("#/components/schemas/", "#/$defs/")
@@ -132,6 +171,9 @@ def generate(out: Path) -> None:
             "--use-annotated",
             "--enum-field-as-literal",
             "all",
+            "--field-extra-keys",
+            "x-vatly-nullable",
+            "x-vatly-request-metadata",
         ],
         check=True,
     )
@@ -221,8 +263,13 @@ def generate(out: Path) -> None:
                     )
                 url = re.sub(r"{(\w+)}", lambda m: "{quote(" + snake(m[1]) + ", safe='')}", path)
                 result_arg = "type(None)" if result == "None" else typed_result
+                body_arg = (
+                    f"body=body, body_type=models.{body['$ref'].split('/')[-1]}"
+                    if body
+                    else "body=None"
+                )
                 resource_lines.append(
-                    f"        return {'await ' if asynchronous else ''}self._transport.request({verb.upper()!r}, f{url!r}, {result_arg}, body={'body' if body else 'None'}, params={'params' if query_type else 'None'}, options=options)"
+                    f"        return {'await ' if asynchronous else ''}self._transport.request({verb.upper()!r}, f{url!r}, {result_arg}, {body_arg}, params={'params' if query_type else 'None'}, options=options)"
                 )
                 if not asynchronous:
                     doc_args = (
