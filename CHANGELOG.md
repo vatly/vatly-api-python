@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.0a4 — 2026-11-25
 
 - Sync `openapi.yaml` with the production specification.
 - `CreateSubscriptionPlanRequest` and `UpdateSubscriptionPlanRequest` now accept only
