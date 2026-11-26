@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- The `User-Agent` is now a chain of `vendor/package/version` tokens, starting with
+  `vatly/vatly-api-python/<version> Python/<version> httpx/<version>` instead of
+  `vatly-api-python/<version>`, matching the other Vatly SDKs.
+- New `add_version_string()` on both clients: packages and integrations built on the SDK
+  append their own token, such as `vatly/vatly-fluent-python/<version>`, so a request
+  names every package involved. A `User-Agent` in `default_headers` still replaces it.
+
 ## 0.1.0a4 — 2026-11-25
 
 - Sync `openapi.yaml` with the production specification.

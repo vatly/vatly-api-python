@@ -81,6 +81,20 @@ Unkeyed mutations do not retry. Redirects are not followed.
 `client_info={"app": "MyApp/1.0", "framework": "Django/5"}` to add sanitized identifiers,
 or `client_info=False` to suppress the SDK-generated header.
 
+The `User-Agent` names every package involved, one `vendor/package/version` token each,
+starting with `vatly/vatly-api-python/<version> Python/<version> httpx/<version>`.
+A package or integration built on the SDK appends its own token once, on the client it
+uses, so Vatly sees the whole chain:
+
+```python
+client.add_version_string("vatly/vatly-fluent-python/0.1.0a4")
+# User-Agent: vatly/vatly-api-python/0.1.0a4 Python/3.12.8 httpx/0.28.1 vatly/vatly-fluent-python/0.1.0a4
+```
+
+Use your PyPI package name and its version constant. Whitespace in a token becomes `-`,
+and adding a token already present does nothing. A `User-Agent` in `default_headers`
+replaces the whole chain.
+
 ## Errors
 
 All API/transport errors extend `VatlyError`, with `status`, `body`, `url`, `method`,

@@ -86,13 +86,19 @@ class _Transport:
         self.timeout = timeout
         self.max_retries = max_retries
         self._key_generator = idempotency_key_generator
+        self._version_strings = [
+            f"vatly/vatly-api-python/{__version__}",
+            f"Python/{platform.python_version()}",
+            f"httpx/{httpx.__version__}",
+        ]
         self._headers = httpx.Headers(
             {
                 "Authorization": f"Bearer {key}",
                 "Accept": "application/json",
-                "User-Agent": f"vatly-api-python/{__version__}",
+                "User-Agent": " ".join(self._version_strings),
             }
         )
+        self._custom_user_agent = "User-Agent" in httpx.Headers(default_headers or {})
         self._headers.update(default_headers or {})
         if client_info is not False:
             info = f"sdk=vatly-api-python/{__version__}; runtime=python/{platform.python_version()}; os={platform.system()}; arch={platform.machine()}"
@@ -107,6 +113,21 @@ class _Transport:
 
     def _init_http(self) -> None:
         raise NotImplementedError
+
+    def add_version_string(self, version_string: str) -> None:
+        """Append a `vendor/package/version` token to the `User-Agent`.
+
+        Packages built on the SDK call this once with their own token, such as
+        ``client.add_version_string("vatly/vatly-fluent-python/0.1.0a4")``. Whitespace
+        becomes ``-``; a token already present is not added again. A `User-Agent` set
+        in ``default_headers`` replaces the whole chain and is left unchanged.
+        """
+        token = re.sub(r"\s", "-", version_string.strip())
+        if not token or token in self._version_strings:
+            return
+        self._version_strings.append(token)
+        if not self._custom_user_agent:
+            self._headers["User-Agent"] = " ".join(self._version_strings)
 
     @staticmethod
     def serialize(value: BaseModel | dict[str, Any] | None) -> dict[str, Any] | None:

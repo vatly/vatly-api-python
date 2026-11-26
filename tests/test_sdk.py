@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import json
+import platform
 import re
 from datetime import datetime, timedelta, timezone
 from email.utils import format_datetime
@@ -456,6 +457,34 @@ def test_retry_after_date_and_header_precedence(monkeypatch):
     assert all(r.headers["Idempotency-Key"] == "override" for r in seen)
     assert seen[0].extensions["timeout"]["read"] == 3
     assert "Injected/1" in seen[0].headers["Vatly-Client-Info"]
+
+
+def test_user_agent_chains_package_tokens():
+    seen = []
+
+    def handler(r):
+        seen.append(r)
+        return httpx.Response(200, json=CUSTOMER)
+
+    transport = httpx.MockTransport(handler)
+    for headers in (None, {"user-agent": "Custom/1"}):
+        with VatlyClient(KEY, transport=transport, default_headers=headers) as c:
+            c.customers.get("customer_a")
+            c.add_version_string("vatly/vatly-fluent-python/1.2.3")
+            c.add_version_string(" vatly/vatly-django/4 5 ")
+            c.add_version_string("vatly/vatly-fluent-python/1.2.3")
+            c.customers.get("customer_a")
+            c.customers.get("customer_a", options=RequestOptions(headers={"User-Agent": "Own/1"}))
+    sdk = f"vatly/vatly-api-python/{vatly.__version__}"
+    runtime = f"Python/{platform.python_version()} httpx/{httpx.__version__}"
+    assert [r.headers["User-Agent"] for r in seen] == [
+        f"{sdk} {runtime}",
+        f"{sdk} {runtime} vatly/vatly-fluent-python/1.2.3 vatly/vatly-django/4-5",
+        "Own/1",
+        "Custom/1",
+        "Custom/1",
+        "Own/1",
+    ]
 
 
 @pytest.mark.parametrize("asynchronous", [False, True])
